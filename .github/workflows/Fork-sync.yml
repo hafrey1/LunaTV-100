@@ -1,39 +1,42 @@
-name: Fork-sync
+name: Sync LunaTV
 
 permissions:
   contents: write
 
 on:
   schedule:
-    - cron: "0 17 * * *"
+    - cron: "0 17 * * *" # 北京时间每天 01:00
   workflow_dispatch:
 
 jobs:
-  sync_latest_from_upstream:
-    name: Sync latest commits from upstream repo
+  sync:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout target repo
+      - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Sync upstream changes
-        id: sync
-        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4.3
         with:
-          upstream_sync_repo: MoonTechLab/LunaTV
-          upstream_sync_branch: main
-          target_sync_branch: main
-          target_repo_token: ${{ secrets.GITHUB_TOKEN }}
-          allow_unrelated_histories: true
-          test_mode: false
+          fetch-depth: 0
+          persist-credentials: true
 
-      - name: Show sync result
+      - name: Sync with upstream
         run: |
-          echo "Has new commits: ${{ steps.sync.outputs.has_new_commits }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Delete workflow runs
-        uses: Mattraks/delete-workflow-runs@main
-        with:
-          retain_days: 0
-          keep_minimum_runs: 5
+          git remote remove upstream 2>/dev/null || true
+          git remote add upstream https://github.com/MoonTechLab/LunaTV.git
+
+          git fetch upstream main
+
+          git checkout main
+
+          git reset --hard upstream/main
+
+          git push origin main --force
+
+          echo "================================"
+          echo "LunaTV 同步完成"
+          echo "当前提交："
+          git log -1 --oneline
+          echo "================================"
