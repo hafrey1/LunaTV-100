@@ -2,6 +2,7 @@ name: Sync LunaTV
 
 permissions:
   contents: write
+  workflows: write
 
 on:
   schedule:
