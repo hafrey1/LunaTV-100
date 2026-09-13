@@ -19,22 +19,48 @@ jobs:
           fetch-depth: 0
           persist-credentials: true
 
-      - name: Sync with upstream
+      - name: Fetch upstream
+        run: |
+          git remote add upstream https://github.com/MoonTechLab/LunaTV.git
+          git fetch upstream main
+
+      - name: Sync upstream files
+        run: |
+          # 保存自己仓库的 workflow
+          mkdir -p /tmp/my-workflows
+          cp -a .github/workflows/. /tmp/my-workflows/
+
+          # 获取官方最新代码
+          git checkout upstream/main -- .
+
+          # 恢复自己仓库的 workflow
+          rm -rf .github/workflows
+          mkdir -p .github/workflows
+          cp -a /tmp/my-workflows/. .github/workflows/
+
+          # 检查修改
+          git status
+
+      - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git remote remove upstream 2>/dev/null || true
-          git remote add upstream https://github.com/MoonTechLab/LunaTV.git
+          git add -A
 
-          git fetch upstream main
+          if git diff --cached --quiet; then
+            echo "没有新的更新"
+            exit 0
+          fi
 
-          git checkout main
+          git commit -m "sync: update from MoonTechLab/LunaTV"
 
-          git reset --hard upstream/main
+      - name: Push changes
+        run: |
+          git push origin main
 
-          git push origin main --force
-
+      - name: Show result
+        run: |
           echo "================================"
           echo "LunaTV 同步完成"
           echo "当前提交："
